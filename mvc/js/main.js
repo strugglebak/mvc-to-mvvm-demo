@@ -36,12 +36,46 @@ View.prototype.render = function(el, context) {
 }
 
 // 定义 controller 类
-function Controller() {
-
+function Controller({view, model}) {
+  this.view = view;
+  this.model = model;
 }
 // 定义 controller 类的功能
-Controller.prototype.init = function() {}
-Controller.prototype.bindEvents = function() {}
+Controller.prototype.init = function() {
+  this.view.init();
+  this.bindEvents();
+}
+Controller.prototype.bindEvents = function() {
+  $('#addOne').on('click', function(e) {
+    let newNumber = $('#number').text() - 0 + 1;
+    // 发送 put 请求,将新数据传给假后端
+    model.update(newNumber).then(function(response) {
+      let person = response.data.person;
+      let number = person[0].number;
+      view.render('number', number);
+    })
+  });
+
+  $('#minusOne').on('click', function(e) {
+    let newNumber = $('#number').text() - 0 - 1;
+    // 发送 put 请求,将新数据传给假后端
+    model.update(newNumber).then(function(response) {
+      let person = response.data.person;
+      let number = person[0].number;
+      view.render('number', number);
+    })
+  });
+
+  $('#reset').on('click', function(e) {
+    let newNumber = 0;
+    // 发送 put 请求,将新数据传给假后端
+    model.update(newNumber).then(function(response) {
+      let person = response.data.person;
+      let number = person[0].number;
+      $('#number').html(number);
+    })
+  });
+}
 
 
 
@@ -62,7 +96,13 @@ var view = new View({
     </div>
   `
 });
-view.init();
+
+var controller = new Controller({
+  view: view,
+  model: model
+});
+
+controller.init();
 
 // This sets the mock adapter on the default instance
 var mock = new AxiosMockAdapter(axios);
@@ -88,33 +128,4 @@ mock.onAny().reply(function(config) {
 });
 
 
-$('#addOne').on('click', function(e) {
-  let newNumber = $('#number').text() - 0 + 1;
-  // 发送 put 请求,将新数据传给假后端
-  model.update(newNumber).then(function(response) {
-    let person = response.data.person;
-    let number = person[0].number;
-    view.render('number', number);
-  })
-});
-
-$('#minusOne').on('click', function(e) {
-  let newNumber = $('#number').text() - 0 - 1;
-  // 发送 put 请求,将新数据传给假后端
-  model.update(newNumber).then(function(response) {
-    let person = response.data.person;
-    let number = person[0].number;
-    view.render('number', number);
-  })
-});
-
-$('#reset').on('click', function(e) {
-  let newNumber = 0;
-  // 发送 put 请求,将新数据传给假后端
-  model.update(newNumber).then(function(response) {
-    let person = response.data.person;
-    let number = person[0].number;
-    $('#number').html(number);
-  })
-});
 
