@@ -23,10 +23,17 @@ Model.prototype.update = function(number) {
 
 
 // 定义 view 类
-function View() {
+function View({el, context}) {
+  this.el = el;
+  this.context = context;
 }
 // 定义 view 类的功能
-View.prototype.render = function() {}
+View.prototype.init = function() {
+  $(`#${this.el}`).html(this.context);
+}
+View.prototype.render = function(el, context) {
+  $(`#${el}`).html(context);
+}
 
 // 定义 controller 类
 function Controller() {
@@ -43,6 +50,19 @@ var model = new Model({
   data: { id: 1, voter: 'John Smith', number: 2 },
   resource: 'voter',
 });
+var view = new View({
+  el: 'app',
+  context: `
+    被投票人: <span id="voter">John Smith</span>
+    票数: <span id="number">2</span>
+    <div class="actions">
+      <button id="addOne">投一票</button>
+      <button id="minusOne">减一票</button>
+      <button id="reset">重置</button>
+    </div>
+  `
+});
+view.init();
 
 // This sets the mock adapter on the default instance
 var mock = new AxiosMockAdapter(axios);
@@ -52,20 +72,17 @@ var mock = new AxiosMockAdapter(axios);
 mock.onAny().reply(function(config) {
   // 制造假数据
   // 需要的参数 data method url
+  let personData = { id: 1, voter: 'John Smith', number: 2 }
   if(config.url === '/voter/1' && config.method === 'get') {
     return [200, {
-      person: [
-        { id: 1, number: 2 }
-      ]
+      person: [ personData ]
     }];
   } else if (config.url === '/voter/1' && config.method === 'put') {
     // 更新数据再传回前端
     let data = config.data;
-    data = JSON.parse(data);
+    personData = JSON.parse(data);
     return [204, {
-      person: [
-        { id: 1, voter: 'John Smith', number: data.number }
-      ]
+      person: [ personData ]
     }];
   }
 });
@@ -73,13 +90,11 @@ mock.onAny().reply(function(config) {
 
 $('#addOne').on('click', function(e) {
   let newNumber = $('#number').text() - 0 + 1;
-  // $('#number').html(number);
-
   // 发送 put 请求,将新数据传给假后端
   model.update(newNumber).then(function(response) {
     let person = response.data.person;
     let number = person[0].number;
-    $('#number').html(number);
+    view.render('number', number);
   })
 });
 
@@ -89,7 +104,7 @@ $('#minusOne').on('click', function(e) {
   model.update(newNumber).then(function(response) {
     let person = response.data.person;
     let number = person[0].number;
-    $('#number').html(number);
+    view.render('number', number);
   })
 });
 
