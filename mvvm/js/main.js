@@ -6,22 +6,55 @@ var model = new Model({
   resource: 'voter',
 });
 
-var view = new View({
+var view = new Vue({
   el: '#app',
-  context: `
+  data: {
+    person: {
+      id: '',
+      voter: '',
+      number: 0
+    },
+    tickets: 0
+  },
+  template: `
+  <div id="app-wrapper">
     <div>
-    被投票人: <span id="voter">__voter__</span>
-    票数: <span id="number">__number__</span>
+    被投票人: <span id="voter">{{person.voter}}</span>
+    票数: <span id="number">{{person.number}}</span>
     </div>
+    <input v-model="tickets" />
+    投的票数为 {{tickets}}
     <div class="actions">
-      <button id="addOne">投一票</button>
-      <button id="minusOne">减一票</button>
-      <button id="reset">重置</button>
+      <button v-on:click="addOne">投{{tickets}}票</button>
+      <button v-on:click="minusOne">减{{tickets}}票</button>
+      <button v-on:click="reset">重置</button>
     </div>
-  `
+  </div>
+  `,
+  methods: {
+    addOne() {
+      let newNumber = this.person.number + (this.tickets - 0);
+      model.update({number: newNumber}).then(()=> {
+        this.person = model.data;
+      })
+    },
+    minusOne() {
+      let newNumber = this.person.number - (this.tickets - 0);
+      model.update({number: newNumber}).then(()=> {
+        this.person = model.data;
+      })
+    },
+    reset() {
+      let newNumber = 0;
+      model.update({number: newNumber}).then(()=> {
+        this.person = model.data;
+      })
+    }
+  },
+  created() {
+    model.fetch(1).then(()=> {
+      this.person = model.data
+    });
+  }
 });
 
-Controller.init({
-  view: view,
-  model: model
-});
