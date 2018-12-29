@@ -3,10 +3,10 @@
 
 ## 说明
 - mvc 目录
-存放 mvc 代码示例,主要[代码链接](https://github.com/strugglebak/mvc-to-mvvm-demo/blob/master/mvc/js/main.js)
+存放 mvc 代码示例, [主要代码链接](https://github.com/strugglebak/mvc-to-mvvm-demo/blob/master/mvc/js/main.js)
 
 - mvvc 目录
-存放 mvvc 代码示例
+存放 mvvc 代码示例, [主要代码链接](https://github.com/strugglebak/mvc-to-mvvm-demo/blob/master/mvvm/js/main.js)
 
 ## 更新
 - 2018.12.29
