@@ -45,47 +45,47 @@ View.prototype.render = function(data) {
 }
 
 
-// 定义 controller 类
-function Controller({view, model}) {
-  this.view = view;
-  this.model = model;
-}
-// 初始化
-Controller.prototype.init = function() {
+// 定义 controller 对象
+var Controller = {
+  view: null,
+  model: null,
+  init: function({view, model}) {
+    this.view = view;
+    this.model = model;
 
-  // model 先读取数据
-  this.model.fetch(1).then((e)=> {
-    // 读取数据之后再渲染页面
-    this.view.render(this.model.data);
-    this.bindEvents();
-  })
-}
-Controller.prototype.addOne = function(el) {
-  let newNumber = $(el).text() - 0 + 1;
-  this.model.update({number: newNumber}).then(()=> {
-    this.view.render(this.model.data);
-  })
-}
-Controller.prototype.minusOne = function(el) {
-  let newNumber = $(el).text() - 0 - 1;
-  this.model.update({number: newNumber}).then(()=> {
-    this.view.render(this.model.data);
-  })
-}
-Controller.prototype.reset = function(el) {
-  let newNumber = 0;
-  this.model.update({number: newNumber}).then(()=> {
-    this.view.render(this.model.data);
-  })
-}
-// 绑定事件
-Controller.prototype.bindEvents = function() {
-  $(this.view.el).
-    on('click', '#addOne', this.addOne.bind(this, '#number'));
-  $(this.view.el).
-    on('click', '#minusOne', this.minusOne.bind(this, '#number'));
-  $(this.view.el).
-    on('click', '#reset', this.reset.bind(this, '#number'));
+    // model 先读取数据
+    this.model.fetch(1).then((e)=> {
+      // 读取数据之后再渲染页面
+      this.view.render(this.model.data);
+      this.bindEvents();
+    })
+  },
+  bindEvents: function() {
+    $(this.view.el).
+      on('click', '#addOne', this.addOne.bind(this, '#number'));
+    $(this.view.el).
+      on('click', '#minusOne', this.minusOne.bind(this, '#number'));
+    $(this.view.el).
+      on('click', '#reset', this.reset.bind(this, '#number'));
+  },
+  addOne: function(el) {
+    let newNumber = $(el).text() - 0 + 1;
+    this.model.update({number: newNumber}).then(()=> {
+      this.view.render(this.model.data);
+    })
+  },
+  minusOne: function(el) {
+    let newNumber = $(el).text() - 0 - 1;
+    this.model.update({number: newNumber}).then(()=> {
+      this.view.render(this.model.data);
+    })
+  },
+  reset: function(el) {
+    let newNumber = 0;
+    this.model.update({number: newNumber}).then(()=> {
+      this.view.render(this.model.data);
+    })
+  },
 };
 
 // 第三方本地 response 拦截器,伪造本地数据库
@@ -118,6 +118,7 @@ function mockLocalData() {
 
 
 
+
 // code start
 mockLocalData();
 
@@ -141,10 +142,7 @@ var view = new View({
   `
 });
 
-var controller = new Controller({
+Controller.init({
   view: view,
   model: model
 });
-
-controller.init();
-
