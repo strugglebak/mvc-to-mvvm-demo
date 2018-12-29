@@ -4,37 +4,44 @@ function Model({data, resource}) {
   this.resource = resource;
 }
 // 抓取数据
-Model.prototype.fetch = function() {
+Model.prototype.fetch = function(id) {
   let resource = this.resource;
-  let id = this.data.id;
   return axios.get(`/${resource}/${id}`).
-    then(function(response) {
+    then((response)=> {
+      // 将数据保存在 model 中
+      this.data = response.data.person[0];
+      console.log('fetching data', this.data);
       return response;
-  });
+  }).catch((error)=>{console.log(error)});
 }
 // 更新数据
-Model.prototype.update = function(number) {
+Model.prototype.update = function(data) {
   let resource = this.resource;
   let id = this.data.id;
-  return axios.put(`/${resource}/${id}`, {number: number}).
-    then(function(response) {
+  return axios.put(`/${resource}/${id}`, data).
+    then((response)=> {
+      // 将数据保存在 model 中
+      this.data = response.data.person[0];
+      console.log('updating data', this.data);
       return response;
-  });
+  }).catch((error)=>{console.log(error)});
 }
-
 
 // 定义 view 类
 function View({el, context}) {
   this.el = el;
   this.context = context;
 }
-// 初始化
-View.prototype.init = function() {
-  $(`#${this.el}`).html(this.context);
-}
 // 渲染对应元素
-View.prototype.render = function(el, context) {
-  $(`#${el}`).html(context);
+View.prototype.render = function(data) {
+  let html = this.context;
+  // 遍历 data 的 key
+  for(let key in data) {
+    // 将 html 中标注的 '__xxx__' 替换成 model 中的 data
+    html = html.replace(`__${key}__`, data[key]);
+  }
+  // 渲染
+  $(this.el).html(html);
 }
 
 
@@ -45,43 +52,43 @@ function Controller({view, model}) {
 }
 // 初始化
 Controller.prototype.init = function() {
-  this.view.init();
-  this.bindEvents();
+
+  // model 先读取数据
+  this.model.fetch(1).then((e)=> {
+    // 读取数据之后再渲染页面
+    this.view.render(this.model.data);
+    this.bindEvents();
+  })
+}
+Controller.prototype.addOne = function(el) {
+  let newNumber = $(el).text() - 0 + 1;
+  this.model.update({number: newNumber}).then(()=> {
+    this.view.render(this.model.data);
+  })
+}
+Controller.prototype.minusOne = function(el) {
+  let newNumber = $(el).text() - 0 - 1;
+  this.model.update({number: newNumber}).then(()=> {
+    this.view.render(this.model.data);
+  })
+}
+Controller.prototype.reset = function(el) {
+  let newNumber = 0;
+  this.model.update({number: newNumber}).then(()=> {
+    this.view.render(this.model.data);
+  })
 }
 // 绑定事件
 Controller.prototype.bindEvents = function() {
-  $('#addOne').on('click', function(e) {
-    let newNumber = $('#number').text() - 0 + 1;
-    // 发送 put 请求,将新数据传给假后端
-    model.update(newNumber).then(function(response) {
-      let person = response.data.person;
-      let number = person[0].number;
-      view.render('number', number);
-    })
-  });
+  $(this.view.el).
+    on('click', '#addOne', this.addOne.bind(this, '#number'));
+  $(this.view.el).
+    on('click', '#minusOne', this.minusOne.bind(this, '#number'));
+  $(this.view.el).
+    on('click', '#reset', this.reset.bind(this, '#number'));
+};
 
-  $('#minusOne').on('click', function(e) {
-    let newNumber = $('#number').text() - 0 - 1;
-    // 发送 put 请求,将新数据传给假后端
-    model.update(newNumber).then(function(response) {
-      let person = response.data.person;
-      let number = person[0].number;
-      view.render('number', number);
-    })
-  });
-
-  $('#reset').on('click', function(e) {
-    let newNumber = 0;
-    // 发送 put 请求,将新数据传给假后端
-    model.update(newNumber).then(function(response) {
-      let person = response.data.person;
-      let number = person[0].number;
-      $('#number').html(number);
-    })
-  });
-}
-
-// 第三方本地 response 拦截器
+// 第三方本地 response 拦截器,伪造本地数据库
 function mockLocalData() {
   // This sets the mock adapter on the default instance
   var mock = new AxiosMockAdapter(axios);
@@ -89,19 +96,18 @@ function mockLocalData() {
   // Mock any request
   // arguments for reply are (status, data, headers)
   mock.onAny().reply(function(config) {
-    // 制造假数据
     // 需要的参数 data method url
-    let personData = { id: 1, voter: 'John Smith', number: 2 }
+    console.log(config.data);
     if(config.url === '/voter/1' && config.method === 'get') {
       return [200, {
-        person: [ personData ]
+        person: [ { id: 1, voter: 'John Smith', number: 2 } ]
       }];
     } else if (config.url === '/voter/1' && config.method === 'put') {
-      // 更新数据再传回前端
+      // response 前传给 model 保存
       let data = config.data;
-      personData = JSON.parse(data);
+      data = JSON.parse(data);
       return [204, {
-        person: [ personData ]
+        person: [ { id: 1, voter: 'John Smith', number: data.number } ]
       }];
     }
   });
@@ -116,15 +122,17 @@ function mockLocalData() {
 mockLocalData();
 
 var model = new Model({
-  data: { id: 1, voter: 'John Smith', number: 2 },
+  data: { id: '', voter: '', number: 0 },
   resource: 'voter',
 });
 
 var view = new View({
-  el: 'app',
+  el: '#app',
   context: `
-    被投票人: <span id="voter">John Smith</span>
-    票数: <span id="number">2</span>
+    <div>
+    被投票人: <span id="voter">__voter__</span>
+    票数: <span id="number">__number__</span>
+    </div>
     <div class="actions">
       <button id="addOne">投一票</button>
       <button id="minusOne">减一票</button>
@@ -139,6 +147,4 @@ var controller = new Controller({
 });
 
 controller.init();
-
-
 
